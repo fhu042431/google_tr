@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 gptApiKey: gptApiKeyInput.value.trim(),
                 gptModel: gptModelSelect.value,
                 gptApiUrl: gptApiUrlInput.value.trim() || 'http://127.0.0.1:8045/v1/chat/completions',
-                gptSystemPrompt: gptSystemPromptInput.value.trim() || '你是一个专业的英译中翻译助手。请将用户提供的英文文本翻译成简体中文。只返回翻译结果,不要添加任何解释或额外内容。'
+                gptSystemPrompt: gptSystemPromptInput.value.trim() || '你是一个专业的双向翻译助手。请根据用户输入的语言自动判断并翻译:\n- 如果输入是中文,则翻译成英文\n- 如果输入是英文,则翻译成中文\n只返回翻译结果,不要添加任何解释或额外内容。'
             };
 
             // 验证GPT配置

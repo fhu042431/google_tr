@@ -7,7 +7,7 @@ class Translator {
       gptApiKey: 'sk-c2bf4ae57ed945469c1d57088d32b864',
       gptModel: 'claude-sonnet-4-5',
       gptApiUrl: 'http://127.0.0.1:8045/v1/chat/completions',
-      gptSystemPrompt: '你是一个专业的英译中翻译助手。请将用户提供的英文文本翻译成简体中文。只返回翻译结果,不要添加任何解释或额外内容。'
+      gptSystemPrompt: '你是一个专业的双向翻译助手。请根据用户输入的语言自动判断并翻译:\n- 如果输入是中文,则翻译成英文\n- 如果输入是英文,则翻译成中文\n只返回翻译结果,不要添加任何解释或额外内容。'
     };
     this.loadConfig();
   }

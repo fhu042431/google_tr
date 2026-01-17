@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "英译中翻译助手",
+  "name": "中英互译助手",
   "version": "1.0.0",
-  "description": "选择英文文本即可快速翻译成中文,支持Google翻译和AI翻译(GPT/Claude等)",
+  "description": "智能双向翻译,支持中英互译。可使用Google翻译或AI翻译(GPT/Claude等)",
   "permissions": [
     "contextMenus",
     "activeTab",
