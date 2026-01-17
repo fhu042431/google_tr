@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const gptApiKeyInput = document.getElementById('gptApiKey');
     const gptModelSelect = document.getElementById('gptModel');
     const gptApiUrlInput = document.getElementById('gptApiUrl');
+    const gptSystemPromptInput = document.getElementById('gptSystemPrompt');
     const resetBtn = document.getElementById('resetBtn');
     const statusMessage = document.getElementById('statusMessage');
 
@@ -65,6 +66,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (config.gptApiUrl) {
                     gptApiUrlInput.value = config.gptApiUrl;
                 }
+                if (config.gptSystemPrompt) {
+                    gptSystemPromptInput.value = config.gptSystemPrompt;
+                }
             }
         } catch (error) {
             showMessage('加载设置失败: ' + error.message, 'error');
@@ -82,7 +86,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 engine: engine,
                 gptApiKey: gptApiKeyInput.value.trim(),
                 gptModel: gptModelSelect.value,
-                gptApiUrl: gptApiUrlInput.value.trim() || 'http://127.0.0.1:8045/v1/chat/completions'
+                gptApiUrl: gptApiUrlInput.value.trim() || 'http://127.0.0.1:8045/v1/chat/completions',
+                gptSystemPrompt: gptSystemPromptInput.value.trim() || '你是一个专业的英译中翻译助手。请将用户提供的英文文本翻译成简体中文。只返回翻译结果,不要添加任何解释或额外内容。'
             };
 
             // 验证GPT配置
@@ -121,6 +126,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             gptApiKeyInput.value = '';
             gptModelSelect.value = 'gpt-3.5-turbo';
             gptApiUrlInput.value = '';
+            gptSystemPromptInput.value = '';
 
             showMessage('设置已重置', 'success');
         } catch (error) {

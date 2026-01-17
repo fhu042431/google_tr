@@ -6,7 +6,8 @@ class Translator {
       engine: 'google', // 'google' 或 'gpt'
       gptApiKey: 'sk-c2bf4ae57ed945469c1d57088d32b864',
       gptModel: 'claude-sonnet-4-5',
-      gptApiUrl: 'http://127.0.0.1:8045/v1/chat/completions'
+      gptApiUrl: 'http://127.0.0.1:8045/v1/chat/completions',
+      gptSystemPrompt: '你是一个专业的英译中翻译助手。请将用户提供的英文文本翻译成简体中文。只返回翻译结果,不要添加任何解释或额外内容。'
     };
     this.loadConfig();
   }
@@ -121,7 +122,7 @@ class Translator {
         messages: [
           {
             role: 'system',
-            content: '你是一个专业的英译中翻译助手。请将用户提供的英文文本翻译成日语。只返回翻译结果,不要添加任何解释或额外内容。'
+            content: this.config.gptSystemPrompt
           },
           {
             role: 'user',

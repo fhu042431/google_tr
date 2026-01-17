@@ -95,21 +95,29 @@
 
     input[type="text"],
     input[type="password"],
-    select {
+    select,
+    textarea {
       width: 100%;
       padding: 12px;
       border: 2px solid #e0e0e0;
       border-radius: 8px;
       font-size: 14px;
       transition: all 0.3s;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     }
 
     input[type="text"]:focus,
     input[type="password"]:focus,
-    select:focus {
+    select:focus,
+    textarea:focus {
       outline: none;
       border-color: #667eea;
       box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
     }
 
     .gpt-settings {
@@ -250,6 +258,12 @@
             <label for="gptApiUrl">API 地址</label>
             <input type="text" id="gptApiUrl" placeholder="http://127.0.0.1:8045/v1/chat/completions">
             <p class="description">API服务地址,支持本地代理或第三方API服务</p>
+          </div>
+
+          <div class="form-group">
+            <label for="gptSystemPrompt">系统提示词</label>
+            <textarea id="gptSystemPrompt" rows="3" placeholder="你是一个专业的英译中翻译助手..."></textarea>
+            <p class="description">自定义AI翻译的系统提示词,控制翻译风格和要求</p>
           </div>
 
           <div class="info-box">
