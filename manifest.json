@@ -2,25 +2,38 @@
   "manifest_version": 3,
   "name": "英译中翻译助手",
   "version": "1.0.0",
-  "description": "选择英文文本即可快速翻译成中文",
+  "description": "选择英文文本即可快速翻译成中文,支持Google翻译和AI翻译(GPT/Claude等)",
   "permissions": [
     "contextMenus",
-    "activeTab"
+    "activeTab",
+    "storage"
   ],
   "host_permissions": [
-    "https://translate.googleapis.com/*"
+    "https://translate.googleapis.com/*",
+    "https://api.openai.com/*",
+    "https://*/*",
+    "http://127.0.0.1:*/*",
+    "http://localhost:*/*"
   ],
   "background": {
     "service_worker": "background.js"
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["translator.js", "content.js"],
-      "css": ["content.css"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "translator.js",
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
       "run_at": "document_end"
     }
   ],
+  "options_page": "options.html",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",

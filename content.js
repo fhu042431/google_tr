@@ -68,16 +68,23 @@ async function performTranslation() {
     // 清除之前的定时器
     clearAutoHideTimer();
 
+    // 获取并显示当前翻译引擎信息
+    const config = translator.getConfig();
+    console.log(`[翻译助手] 使用引擎: ${config.engine === 'google' ? 'Google翻译' : `AI翻译 (${config.gptModel})`}`);
+    console.log(`[翻译助手] 原文:`, selectedText);
+
     // 显示加载状态
     showTranslatePopup('正在翻译...', true);
 
     try {
         const result = await translator.translate(selectedText);
+        console.log(`[翻译助手] 译文:`, result);
         showTranslatePopup(result, false);
 
         // 设置自动消失定时器
         startAutoHideTimer();
     } catch (error) {
+        console.error(`[翻译助手] 翻译失败:`, error);
         showTranslatePopup(`翻译失败: ${error.message}`, false, true);
         startAutoHideTimer();
     }
@@ -116,10 +123,15 @@ function showTranslatePopup(text, isLoading = false, isError = false) {
         translatePopup.classList.add('error');
     }
 
+    // 获取当前翻译引擎信息
+    const config = translator.getConfig();
+    const engineName = config.engine === 'google' ? 'Google翻译' : `AI翻译 (${config.gptModel})`;
+
     translatePopup.innerHTML = `
     <div class="chrome-translator-popup-header">
       <div class="chrome-translator-popup-title">
-        ${isLoading ? '翻译中' : isError ? '错误' : '翻译结果'}
+        ${isLoading ? '翻译中...' : isError ? '错误' : '翻译结果'}
+        <span class="chrome-translator-engine-badge">${engineName}</span>
       </div>
       <button class="chrome-translator-popup-close">×</button>
     </div>
@@ -438,6 +450,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         translateFullPage();
     } else if (request.action === 'translateParagraph') {
         translateParagraph();
+    } else if (request.action === 'reloadConfig') {
+        // 重新加载翻译器配置
+        translator.loadConfig();
     }
 });
 
