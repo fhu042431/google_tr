@@ -5,8 +5,8 @@ let selectedText = '';
 let popupAutoHideTimer = null;
 let floatingToolbar = null;
 
-// 自动消失时间(毫秒)
-const AUTO_HIDE_DELAY = 5000;
+// 自动消失时间(毫秒) - 120秒
+const AUTO_HIDE_DELAY = 120000;
 
 // 初始化
 function init() {
@@ -14,11 +14,9 @@ function init() {
     document.addEventListener('mouseup', handleTextSelection);
     document.addEventListener('keyup', handleTextSelection);
 
-    // 点击其他地方时隐藏UI
+    // 点击其他地方时隐藏工具栏(但不隐藏翻译弹窗)
     document.addEventListener('mousedown', (e) => {
-        if (translatePopup && !translatePopup.contains(e.target)) {
-            hideTranslatePopup();
-        }
+        // 翻译弹窗不再通过点击外部关闭,只能通过关闭按钮或自动隐藏
         if (floatingToolbar && !floatingToolbar.contains(e.target)) {
             hideFloatingToolbar();
         }
@@ -31,15 +29,36 @@ function init() {
 // 处理文本选择
 function handleTextSelection(e) {
     const selection = window.getSelection();
+
+    // 检查是否有实际的选择(不是折叠的选择)
+    if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
+        // 不再自动隐藏弹窗,让用户手动关闭或等待自动隐藏
+        return;
+    }
+
+    // 检查选择是否在翻译弹窗或工具栏内
+    if (selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const container = range.commonAncestorContainer;
+        const element = container.nodeType === 3 ? container.parentNode : container;
+
+        // 如果选择在翻译弹窗或工具栏内,不触发翻译
+        if (element.closest('.chrome-translator-popup') ||
+            element.closest('.chrome-translator-toolbar') ||
+            element.closest('.chrome-translator-modal')) {
+            return;
+        }
+    }
+
     const text = selection.toString().trim();
 
-    if (text.length > 0) {
+    // 只有当选中的文本长度大于0且包含非空白字符时才翻译
+    if (text.length > 0 && /\S/.test(text)) {
         selectedText = text;
         // 直接翻译,不显示按钮
         performTranslation();
-    } else {
-        hideTranslatePopup();
     }
+    // 如果选择的是无效文本(空白等),不做任何操作,保持弹窗显示
 }
 
 // 执行翻译
