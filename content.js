@@ -304,37 +304,82 @@ async function translateParagraph() {
 
 // 全文翻译
 async function translateFullPage() {
-    // 获取页面主要文本内容
-    const mainContent = document.body.innerText;
+    // 获取页面所有段落元素
+    const paragraphSelectors = 'p, h1, h2, h3, h4, h5, h6, li, blockquote, td, th';
+    const allParagraphs = document.querySelectorAll(paragraphSelectors);
 
-    // 限制文本长度(Google Translate API有限制)
-    const maxLength = 5000;
-    const textToTranslate = mainContent.length > maxLength
-        ? mainContent.substring(0, maxLength) + '...'
-        : mainContent;
+    // 过滤出有实际文本内容的段落
+    const paragraphs = Array.from(allParagraphs).filter(p => {
+        // 排除媒体元素本身（img, video等不应该被当作段落）
+        const mediaTagNames = ['IMG', 'VIDEO', 'AUDIO', 'SVG', 'CANVAS', 'IFRAME'];
+        if (mediaTagNames.includes(p.tagName)) {
+            return false;
+        }
 
-    selectedText = textToTranslate;
+        // 排除代码和样式元素（style, script, code, pre等）
+        const codeTagNames = ['STYLE', 'SCRIPT', 'CODE', 'PRE', 'NOSCRIPT'];
+        if (codeTagNames.includes(p.tagName)) {
+            return false;
+        }
 
-    // 创建全文翻译弹窗
-    showFullPageTranslation(textToTranslate);
+        // 排除在代码块或样式块内的元素
+        if (p.closest('style') || p.closest('script') || p.closest('code') || p.closest('pre') || p.closest('noscript')) {
+            return false;
+        }
+
+        // 排除翻译插件自己的元素
+        if (p.closest('.chrome-translator-popup') ||
+            p.closest('.chrome-translator-toolbar') ||
+            p.closest('.chrome-translator-modal')) {
+            return false;
+        }
+
+        // 检查是否包含图片、视频等媒体元素（包含媒体的段落不翻译）
+        const hasMedia = () => {
+            // 检查是否包含媒体元素
+            const mediaElements = p.querySelectorAll('img, video, audio, svg, canvas, iframe');
+            return mediaElements.length > 0;
+        };
+
+        const text = p.textContent.trim();
+
+        // 排除空段落和包含媒体的段落
+        return text.length > 0 && !hasMedia();
+    });
+
+    if (paragraphs.length === 0) {
+        showNotification('未找到可翻译的段落');
+        return;
+    }
+
+    // 创建全文翻译弹窗并开始翻译
+    showFullPageTranslation(paragraphs);
 }
 
 // 显示全文翻译弹窗
-async function showFullPageTranslation(text) {
+async function showFullPageTranslation(paragraphs) {
     // 创建遮罩层和弹窗
     const overlay = document.createElement('div');
     overlay.className = 'chrome-translator-overlay';
 
     const modal = document.createElement('div');
     modal.className = 'chrome-translator-modal';
+
+    // 获取当前翻译引擎信息
+    const config = translator.getConfig();
+    const engineName = config.engine === 'google' ? 'Google翻译' : `AI翻译 (${config.gptModel})`;
+
     modal.innerHTML = `
     <div class="chrome-translator-modal-header">
-      <div class="chrome-translator-modal-title">网页全文翻译</div>
+      <div class="chrome-translator-modal-title">
+        网页全文翻译
+        <span class="chrome-translator-engine-badge">${engineName}</span>
+      </div>
       <button class="chrome-translator-modal-close">×</button>
     </div>
     <div class="chrome-translator-modal-content">
       <div class="chrome-translator-loader"></div>
-      <div class="chrome-translator-loading-text">正在翻译全文，请稍候...</div>
+      <div class="chrome-translator-loading-text">正在翻译第 1 / ${paragraphs.length} 段...</div>
     </div>
   `;
 
@@ -356,29 +401,90 @@ async function showFullPageTranslation(text) {
     setTimeout(() => overlay.classList.add('show'), 10);
 
     try {
-        // 分段翻译(API有长度限制)
-        const chunks = splitTextIntoChunks(text, 1000);
-        const translations = [];
+        // 创建结果容器并立即显示
+        const resultsContainer = document.createElement('div');
+        resultsContainer.className = 'chrome-translator-fullpage-results';
 
-        for (let i = 0; i < chunks.length; i++) {
-            const result = await translator.translate(chunks[i]);
-            translations.push(result);
+        // 创建进度提示元素
+        const progressIndicator = document.createElement('div');
+        progressIndicator.className = 'chrome-translator-progress-indicator';
+        progressIndicator.innerHTML = `
+            <div class="chrome-translator-loader"></div>
+            <div class="chrome-translator-loading-text">正在翻译第 1 / ${paragraphs.length} 段...</div>
+        `;
+
+        // 替换加载界面为结果容器
+        modal.querySelector('.chrome-translator-modal-content').innerHTML = '';
+        modal.querySelector('.chrome-translator-modal-content').appendChild(resultsContainer);
+        modal.querySelector('.chrome-translator-modal-content').appendChild(progressIndicator);
+
+        // 逐段落翻译并实时显示
+        let translatedCount = 0;
+        for (let i = 0; i < paragraphs.length; i++) {
+            const paragraph = paragraphs[i];
+            const originalText = paragraph.textContent.trim();
+
+            // 跳过过短的段落（可能是导航、按钮等）
+            if (originalText.length < 10) {
+                continue;
+            }
 
             // 更新进度
-            const progress = Math.round(((i + 1) / chunks.length) * 100);
-            modal.querySelector('.chrome-translator-loading-text').textContent =
-                `正在翻译... ${progress}%`;
+            progressIndicator.querySelector('.chrome-translator-loading-text').textContent =
+                `正在翻译第 ${i + 1} / ${paragraphs.length} 段...`;
+
+            try {
+                // 翻译当前段落
+                const translation = await translator.translate(originalText);
+
+                // 创建段落结果项
+                const resultItem = document.createElement('div');
+                resultItem.className = 'chrome-translator-paragraph-item';
+                resultItem.innerHTML = `
+                    <div class="chrome-translator-paragraph-original">
+                        <div class="chrome-translator-label">原文</div>
+                        <div class="chrome-translator-text">${escapeHtml(originalText)}</div>
+                    </div>
+                    <div class="chrome-translator-paragraph-translation">
+                        <div class="chrome-translator-label">译文</div>
+                        <div class="chrome-translator-text">${escapeHtml(translation)}</div>
+                    </div>
+                `;
+
+                // 立即添加到结果容器并显示
+                resultsContainer.appendChild(resultItem);
+
+                // 添加淡入动画
+                setTimeout(() => {
+                    resultItem.style.opacity = '0';
+                    resultItem.style.transform = 'translateY(10px)';
+                    setTimeout(() => {
+                        resultItem.style.transition = 'all 0.3s ease';
+                        resultItem.style.opacity = '1';
+                        resultItem.style.transform = 'translateY(0)';
+                    }, 10);
+                }, 10);
+
+                // 自动滚动到最新翻译的段落
+                resultItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+                translatedCount++;
+            } catch (error) {
+                console.error(`翻译第 ${i + 1} 段失败:`, error);
+                // 继续翻译下一段
+            }
         }
 
-        const fullTranslation = translations.join('');
+        // 翻译完成，移除进度提示
+        progressIndicator.remove();
 
-        // 显示翻译结果
-        modal.querySelector('.chrome-translator-modal-content').innerHTML = `
-      <div class="chrome-translator-fullpage-result">
-        <div class="chrome-translator-label">翻译结果</div>
-        <div class="chrome-translator-fullpage-text">${escapeHtml(fullTranslation)}</div>
-      </div>
-    `;
+        // 如果没有翻译任何段落，显示提示
+        if (translatedCount === 0) {
+            resultsContainer.innerHTML = `
+                <div class="chrome-translator-error">未找到可翻译的内容</div>
+            `;
+        }
+
     } catch (error) {
         modal.querySelector('.chrome-translator-modal-content').innerHTML = `
       <div class="chrome-translator-error">翻译失败: ${error.message}</div>

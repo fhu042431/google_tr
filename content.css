@@ -395,6 +395,66 @@
   line-height: 1.8;
   color: #1f2937;
   white-space: pre-wrap;
+  word-spacing: 0.1em;
+  word-break: break-word;
+}
+
+/* 段落翻译结果容器 */
+.chrome-translator-fullpage-results {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.chrome-translator-paragraph-item {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+}
+
+.chrome-translator-paragraph-item:last-child {
+  margin-bottom: 0;
+}
+
+.chrome-translator-paragraph-original,
+.chrome-translator-paragraph-translation {
+  margin-bottom: 12px;
+}
+
+.chrome-translator-paragraph-translation {
+  margin-bottom: 0;
+}
+
+.chrome-translator-paragraph-original .chrome-translator-text {
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.chrome-translator-paragraph-translation .chrome-translator-text {
+  color: #1f2937;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.7;
+}
+
+/* 模态框标题徽章 */
+.chrome-translator-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chrome-translator-modal-title .chrome-translator-engine-badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 12px;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
 }
 
 .chrome-translator-error {
@@ -402,6 +462,25 @@
   text-align: center;
   padding: 40px;
   font-size: 16px;
+}
+
+/* 进度提示 */
+.chrome-translator-progress-indicator {
+  position: sticky;
+  bottom: 0;
+  background: linear-gradient(to top, white 0%, white 80%, rgba(255, 255, 255, 0) 100%);
+  padding: 20px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid #e5e7eb;
+  margin-top: 20px;
+}
+
+.chrome-translator-progress-indicator .chrome-translator-loader {
+  width: 32px;
+  height: 32px;
 }
 
 /* 通知 */
