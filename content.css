@@ -194,8 +194,19 @@
 /* 表格翻译弹窗 */
 .chrome-translator-table-popup {
   position: fixed !important;
-  min-width: 400px;
-  max-width: 800px;
+  min-width: 600px;
+  max-width: 90vw;
+  max-height: 85vh;
+}
+
+.chrome-translator-table-popup .chrome-translator-popup-header {
+  cursor: move;
+  user-select: none;
+}
+
+.chrome-translator-table-popup .chrome-translator-modal-content {
+  max-height: calc(85vh - 60px);
+  overflow-y: auto;
 }
 
 .chrome-translator-table-container {
