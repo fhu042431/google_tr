@@ -59,12 +59,25 @@ class Translator {
     try {
       let result;
 
-      // 根据配置选择翻译引擎
-      if (this.config.engine === 'gpt') {
-        result = await this.translateWithGPT(cleanText);
-      } else {
-        result = await this.translateWithGoogle(cleanText);
-      }
+      // 创建超时Promise
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('翻译超时（30秒）'));
+        }, 30000); // 30秒超时
+      });
+
+      // 创建翻译Promise
+      const translatePromise = (async () => {
+        // 根据配置选择翻译引擎
+        if (this.config.engine === 'gpt') {
+          return await this.translateWithGPT(cleanText);
+        } else {
+          return await this.translateWithGoogle(cleanText);
+        }
+      })();
+
+      // 使用Promise.race实现超时
+      result = await Promise.race([translatePromise, timeoutPromise]);
 
       // 缓存结果
       this.cache.set(cacheKey, result);

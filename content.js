@@ -196,16 +196,20 @@ function showTranslatePopup(text, isLoading = false, isError = false) {
 
 // 隐藏翻译弹窗
 function hideTranslatePopup() {
+    console.log('[弹窗] hideTranslatePopup 被调用', new Error().stack);
     clearAutoHideTimer();
     if (translatePopup) {
-        translatePopup.classList.remove('show');
+        console.log('[弹窗] 正在隐藏弹窗', translatePopup);
         const popup = translatePopup;
-        translatePopup = null;
-        setTimeout(() => {
-            if (popup && popup.parentNode) {
-                popup.remove();
-            }
-        }, 200);
+        translatePopup = null;  // 立即清空全局变量
+
+        // 立即移除弹窗，不要延迟
+        if (popup && popup.parentNode) {
+            popup.remove();
+            console.log('[弹窗] 弹窗已从DOM移除');
+        }
+    } else {
+        console.log('[弹窗] translatePopup 为 null，无需隐藏');
     }
 }
 
@@ -268,30 +272,40 @@ async function translateParagraph() {
         e.stopPropagation();
 
         const element = e.target;
-        const text = element.textContent.trim();
 
-        if (text.length > 0) {
-            selectedText = text;
+        // 检查是否点击了表格或表格内的元素
+        const table = element.closest('table');
 
-            // 高亮元素
-            element.style.outline = '2px solid #667eea';
+        if (table) {
+            // 翻译整个表格
+            await translateTable(table);
+        } else {
+            // 翻译普通段落
+            const text = element.textContent.trim();
 
-            // 显示加载状态
-            showTranslatePopup('正在翻译...', true);
+            if (text.length > 0) {
+                selectedText = text;
 
-            try {
-                const result = await translator.translate(text);
-                showTranslatePopup(result, false);
-                startAutoHideTimer();
-            } catch (error) {
-                showTranslatePopup(`翻译失败: ${error.message}`, false, true);
-                startAutoHideTimer();
+                // 高亮元素
+                element.style.outline = '2px solid #667eea';
+
+                // 显示加载状态
+                showTranslatePopup('正在翻译...', true);
+
+                try {
+                    const result = await translator.translate(text);
+                    showTranslatePopup(result, false);
+                    startAutoHideTimer();
+                } catch (error) {
+                    showTranslatePopup(`翻译失败: ${error.message}`, false, true);
+                    startAutoHideTimer();
+                }
+
+                // 移除高亮
+                setTimeout(() => {
+                    element.style.outline = '';
+                }, 2000);
             }
-
-            // 移除高亮
-            setTimeout(() => {
-                element.style.outline = '';
-            }, 2000);
         }
 
         // 移除事件监听
@@ -300,6 +314,198 @@ async function translateParagraph() {
     };
 
     document.addEventListener('click', clickHandler, true);
+}
+
+// 翻译表格
+async function translateTable(table) {
+    console.log('[表格翻译] 开始翻译表格', table);
+
+    // 高亮表格
+    table.style.outline = '2px solid #667eea';
+
+    // 显示加载状态
+    showTranslatePopup('正在翻译表格...', true);
+
+    try {
+        // 提取表格结构
+        const rows = table.querySelectorAll('tr');
+        console.log('[表格翻译] 找到行数:', rows.length);
+
+        const tableData = [];
+
+        for (const row of rows) {
+            const cells = row.querySelectorAll('td, th');
+            const rowData = [];
+
+            for (const cell of cells) {
+                const text = cell.textContent.trim();
+                if (text.length > 0) {
+                    console.log('[表格翻译] 翻译单元格:', text);
+                    // 翻译单元格内容
+                    try {
+                        const translation = await translator.translate(text);
+                        console.log('[表格翻译] 翻译结果:', translation);
+                        rowData.push({
+                            original: text,
+                            translation: translation,
+                            isHeader: cell.tagName === 'TH'
+                        });
+                    } catch (error) {
+                        console.error('[表格翻译] 翻译失败:', error);
+                        rowData.push({
+                            original: text,
+                            translation: `[翻译失败]`,
+                            isHeader: cell.tagName === 'TH'
+                        });
+                    }
+                } else {
+                    rowData.push({
+                        original: '',
+                        translation: '',
+                        isHeader: cell.tagName === 'TH'
+                    });
+                }
+            }
+
+            if (rowData.length > 0) {
+                tableData.push(rowData);
+            }
+        }
+
+        console.log('[表格翻译] 表格数据:', tableData);
+
+        // 检查是否有数据
+        if (tableData.length === 0) {
+            showTranslatePopup('表格为空或无法提取内容', false, true);
+            startAutoHideTimer();
+        } else {
+            // 显示表格翻译结果（showTableTranslation内部会管理定时器）
+            showTableTranslation(tableData);
+        }
+
+    } catch (error) {
+        console.error('[表格翻译] 错误:', error);
+        showTranslatePopup(`翻译失败: ${error.message}`, false, true);
+        startAutoHideTimer();
+    }
+
+    // 移除高亮
+    setTimeout(() => {
+        table.style.outline = '';
+    }, 2000);
+}
+
+// 显示表格翻译结果
+function showTableTranslation(tableData) {
+    console.log('[表格翻译] ========== 开始显示表格翻译结果 ==========');
+    console.log('[表格翻译] 表格数据:', tableData);
+    console.log('[表格翻译] 当前 translatePopup:', translatePopup);
+
+    // 移除旧弹窗
+    hideTranslatePopup();
+    console.log('[表格翻译] 已调用 hideTranslatePopup');
+
+    // 创建弹窗
+    translatePopup = document.createElement('div');
+    translatePopup.className = 'chrome-translator-popup chrome-translator-table-popup';
+    console.log('[表格翻译] 创建了新弹窗元素:', translatePopup);
+
+    // 获取当前翻译引擎信息
+    const config = translator.getConfig();
+    const engineName = config.engine === 'google' ? 'Google翻译' : `AI翻译 (${config.gptModel})`;
+    console.log('[表格翻译] 翻译引擎:', engineName);
+
+    // 构建表格HTML
+    let originalTableHTML = '<table class="chrome-translator-result-table"><tbody>';
+    let translationTableHTML = '<table class="chrome-translator-result-table"><tbody>';
+
+    console.log('[表格翻译] 开始构建表格HTML');
+
+    for (const row of tableData) {
+        originalTableHTML += '<tr>';
+        translationTableHTML += '<tr>';
+
+        for (const cell of row) {
+            const tag = cell.isHeader ? 'th' : 'td';
+            originalTableHTML += `<${tag}>${escapeHtml(cell.original)}</${tag}>`;
+            translationTableHTML += `<${tag}>${escapeHtml(cell.translation)}</${tag}>`;
+        }
+
+        originalTableHTML += '</tr>';
+        translationTableHTML += '</tr>';
+    }
+
+    originalTableHTML += '</tbody></table>';
+    translationTableHTML += '</tbody></table>';
+
+    console.log('[表格翻译] 表格HTML构建完成');
+    console.log('[表格翻译] 原文表格长度:', originalTableHTML.length);
+    console.log('[表格翻译] 译文表格长度:', translationTableHTML.length);
+
+    translatePopup.innerHTML = `
+    <div class="chrome-translator-popup-header">
+      <div class="chrome-translator-popup-title">
+        表格翻译
+        <span class="chrome-translator-engine-badge">${engineName}</span>
+      </div>
+      <button class="chrome-translator-popup-close">×</button>
+    </div>
+    <div class="chrome-translator-popup-content">
+      <div class="chrome-translator-original">
+        <div class="chrome-translator-label">原文</div>
+        <div class="chrome-translator-table-container">
+          ${originalTableHTML}
+        </div>
+      </div>
+      <div class="chrome-translator-divider"></div>
+      <div class="chrome-translator-result">
+        <div class="chrome-translator-label">译文</div>
+        <div class="chrome-translator-table-container">
+          ${translationTableHTML}
+        </div>
+      </div>
+    </div>
+  `;
+
+    // 鼠标悬停时暂停自动隐藏
+    translatePopup.addEventListener('mouseenter', () => {
+        clearAutoHideTimer();
+    });
+
+    translatePopup.addEventListener('mouseleave', () => {
+        startAutoHideTimer();
+    });
+
+    // 定位弹窗
+    translatePopup.style.left = '50%';
+    translatePopup.style.top = '100px';
+    translatePopup.style.transform = 'translateX(-50%)';
+
+    // 添加关闭事件
+    const closeBtn = translatePopup.querySelector('.chrome-translator-popup-close');
+    closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hideTranslatePopup();
+    });
+
+    document.body.appendChild(translatePopup);
+    console.log('[表格翻译] 弹窗已添加到DOM');
+
+    // 调试：将弹窗元素保存到window对象，方便在控制台检查
+    window.__debugTablePopup = translatePopup;
+    console.log('[表格翻译] 弹窗元素已保存到 window.__debugTablePopup，可在控制台中检查');
+
+    // 添加动画
+    setTimeout(() => {
+        if (translatePopup) {
+            translatePopup.classList.add('show');
+            console.log('[表格翻译] 显示动画已触发');
+        }
+    }, 10);
+
+    // 启动自动隐藏定时器
+    startAutoHideTimer();
+    console.log('[表格翻译] 自动隐藏定时器已启动');
 }
 
 // 全文翻译
