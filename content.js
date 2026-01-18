@@ -338,7 +338,16 @@ async function translateTable(table) {
             const rowData = [];
 
             for (const cell of cells) {
-                const text = cell.textContent.trim();
+                // 克隆单元格以便操作
+                const cellClone = cell.cloneNode(true);
+
+                // 移除script、style、noscript等标签
+                const unwantedElements = cellClone.querySelectorAll('script, style, noscript');
+                unwantedElements.forEach(el => el.remove());
+
+                // 获取纯文本内容
+                const text = cellClone.textContent.trim();
+
                 if (text.length > 0) {
                     console.log('[表格翻译] 翻译单元格:', text);
                     // 翻译单元格内容
@@ -687,7 +696,16 @@ async function showFullPageTranslation(paragraphs) {
         let translatedCount = 0;
         for (let i = 0; i < paragraphs.length; i++) {
             const paragraph = paragraphs[i];
-            const originalText = paragraph.textContent.trim();
+
+            // 克隆段落以便操作
+            const paragraphClone = paragraph.cloneNode(true);
+
+            // 移除script、style、noscript等标签
+            const unwantedElements = paragraphClone.querySelectorAll('script, style, noscript');
+            unwantedElements.forEach(el => el.remove());
+
+            // 获取纯文本内容
+            const originalText = paragraphClone.textContent.trim();
 
             // 跳过过短的段落（可能是导航、按钮等）
             if (originalText.length < 10) {
